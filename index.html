@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f5f7f4">
+    <meta name="description" content="簡單記錄機車保養與加油，掌握下次保養時間。">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="騎車日記">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" sizes="180x180" href="icon-apple.png">
+    <link rel="stylesheet" href="styles.css">
+    <title>騎車日記｜機車保養紀錄</title>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="騎車日記首頁">
+          <span class="brand-mark" aria-hidden="true">騎</span>
+          <span><strong>騎車日記</strong><small>RIDE & CARE</small></span>
+        </a>
+        <button class="icon-button" id="reminder-button" type="button" aria-label="開啟保養提醒" title="開啟保養提醒">♧</button>
+      </header>
+
+      <section class="welcome">
+        <div>
+          <p class="eyebrow">YOUR RIDE, WELL CARED FOR</p>
+          <h1>每一段路，<span>都安心。</span></h1>
+          <p class="welcome-copy">把保養和加油交給這本小日記。</p>
+        </div>
+        <div class="scooter-art" aria-hidden="true">
+          <span class="sun"></span>
+          <span class="road"></span>
+          <span class="scooter">🛵</span>
+        </div>
+      </section>
+
+      <section class="bike-section" aria-labelledby="bike-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">MY GARAGE</p>
+            <h2 id="bike-heading">我的機車</h2>
+          </div>
+          <button class="text-button" id="add-bike-button" type="button">＋ 新增機車</button>
+        </div>
+        <div id="bike-list" class="bike-list"></div>
+      </section>
+
+      <section id="bike-content" hidden>
+        <section class="reminder-card" id="reminder-card" aria-live="polite"></section>
+
+        <section class="section-block" aria-labelledby="records-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">KEEP IT RUNNING</p>
+              <h2 id="records-heading">保養與加油</h2>
+            </div>
+            <button class="text-button" id="add-record-button" type="button">＋ 記一筆</button>
+          </div>
+          <div class="record-filters" role="group" aria-label="篩選紀錄">
+            <button type="button" class="filter-chip active" data-filter="all">全部</button>
+            <button type="button" class="filter-chip" data-filter="engine">機油</button>
+            <button type="button" class="filter-chip" data-filter="gear">齒輪油</button>
+            <button type="button" class="filter-chip" data-filter="fuel">加油</button>
+          </div>
+          <div class="record-list" id="record-list"></div>
+        </section>
+      </section>
+
+      <footer>
+        <p>資料只儲存在這台裝置，不會上傳。</p>
+        <p id="app-status" role="status" aria-live="polite"></p>
+      </footer>
+    </main>
+
+    <dialog id="bike-dialog" class="modal">
+      <form id="bike-form">
+        <div class="modal-heading">
+          <div><p class="eyebrow">MY GARAGE</p><h2 id="bike-dialog-title">新增機車</h2></div>
+          <button type="button" class="close-button" data-close="bike-dialog" aria-label="關閉">×</button>
+        </div>
+        <label>機車名稱 <span class="required">*</span><input name="name" required maxlength="30" placeholder="例如：我的小白"></label>
+        <label>車款 <input name="model" maxlength="40" placeholder="例如：KYMCO Like 125"></label>
+        <label>目前里程（公里） <input name="odometer" type="number" min="0" step="1" placeholder="選填"></label>
+        <div class="interval-fields">
+          <label>機油提醒間隔（天）<input name="engineInterval" type="number" min="1" step="1" value="180" required></label>
+          <label>齒輪油提醒間隔（天）<input name="gearInterval" type="number" min="1" step="1" value="365" required></label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="button secondary" data-close="bike-dialog">取消</button>
+          <button type="submit" class="button primary">儲存機車</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="record-dialog" class="modal">
+      <form id="record-form">
+        <div class="modal-heading">
+          <div><p class="eyebrow">RIDE & CARE</p><h2>新增紀錄</h2></div>
+          <button type="button" class="close-button" data-close="record-dialog" aria-label="關閉">×</button>
+        </div>
+        <label>紀錄類型
+          <select name="type" id="record-type">
+            <option value="engine">機油保養</option>
+            <option value="gear">齒輪油保養</option>
+            <option value="fuel">加油</option>
+          </select>
+        </label>
+        <label>日期 <input name="date" type="date" required></label>
+        <label>當時里程（公里） <input name="odometer" type="number" min="0" step="1" placeholder="選填"></label>
+        <div class="fuel-fields" id="fuel-fields" hidden>
+          <label>加油量（公升） <input name="liters" type="number" min="0.01" step="0.01" placeholder="例如：5.2"></label>
+          <label>金額（元） <input name="cost" type="number" min="0" step="1" placeholder="選填"></label>
+        </div>
+        <label>備註 <textarea name="note" rows="2" maxlength="120" placeholder="選填"></textarea></label>
+        <div class="modal-actions">
+          <button type="button" class="button secondary" data-close="record-dialog">取消</button>
+          <button type="submit" class="button primary">儲存紀錄</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
