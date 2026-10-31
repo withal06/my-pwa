@@ -66,7 +66,10 @@ h2 { margin: 0; font-size: 20px; letter-spacing: .02em; }
 .record-trailing { text-align: right; }
 .record-trailing strong { display: block; font-size: 12px; }
 .record-trailing span { display: block; margin-top: 5px; color: var(--muted); font-size: 10px; }
-.record-delete { display: block; margin: 5px 0 0 auto; padding: 2px 0; border: 0; background: transparent; color: #a67c6b; font-size: 10px; }
+.record-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 5px; }
+.record-edit, .record-delete { padding: 2px 0; border: 0; background: transparent; font-size: 10px; }
+.record-edit { color: var(--green); }
+.record-delete { color: #a67c6b; }
 .empty-state { padding: 25px 15px; border: 1px dashed #d5ded7; border-radius: 16px; color: var(--muted); text-align: center; font-size: 12px; line-height: 1.8; }
 footer { margin-top: 35px; color: #9aa59f; text-align: center; font-size: 10px; }
 footer p { margin-bottom: 5px; }

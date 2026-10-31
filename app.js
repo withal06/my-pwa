@@ -4,6 +4,7 @@ const typeIcons = { engine: "🛢️", gear: "⚙️", fuel: "⛽" };
 const state = loadState();
 let activeFilter = "all";
 let editingBikeId = null;
+let editingRecordId = null;
 
 const bikeList = document.querySelector("#bike-list");
 const bikeContent = document.querySelector("#bike-content");
@@ -161,7 +162,10 @@ function renderRecords(bike) {
       <div class="record-trailing">
         <strong>${escapeHtml(detail || "已記錄")}</strong>
         ${record.odometer && record.type === "fuel" ? `<span>${Number(record.odometer).toLocaleString("zh-TW")} 公里</span>` : ""}
-        <button class="record-delete" type="button" data-delete-record="${escapeHtml(record.id)}">刪除</button>
+        <div class="record-actions">
+          <button class="record-edit" type="button" data-edit-record="${escapeHtml(record.id)}">編輯</button>
+          <button class="record-delete" type="button" data-delete-record="${escapeHtml(record.id)}">刪除</button>
+        </div>
       </div>
     </article>`;
   }).join("");
@@ -180,9 +184,16 @@ function openBikeDialog(bike = null) {
   bikeForm.elements.name.focus();
 }
 
-function openRecordDialog() {
+function openRecordDialog(record = null) {
+  editingRecordId = record?.id || null;
   recordForm.reset();
-  recordForm.elements.date.value = dateInputValue(new Date());
+  document.querySelector("#record-dialog-title").textContent = record ? "編輯紀錄" : "新增紀錄";
+  recordForm.elements.type.value = record?.type || "engine";
+  recordForm.elements.date.value = record?.date || dateInputValue(new Date());
+  recordForm.elements.odometer.value = record?.odometer || "";
+  recordForm.elements.liters.value = record?.liters || "";
+  recordForm.elements.cost.value = record?.cost || "";
+  recordForm.elements.note.value = record?.note || "";
   updateFuelFields();
   recordDialog.showModal();
 }
@@ -214,7 +225,7 @@ function checkDueNotifications() {
 }
 
 document.querySelector("#add-bike-button").addEventListener("click", () => openBikeDialog());
-document.querySelector("#add-record-button").addEventListener("click", openRecordDialog);
+document.querySelector("#add-record-button").addEventListener("click", () => openRecordDialog());
 document.querySelector("#record-type").addEventListener("change", updateFuelFields);
 
 bikeList.addEventListener("click", (event) => {
@@ -231,10 +242,16 @@ bikeList.addEventListener("click", (event) => {
 });
 
 recordList.addEventListener("click", (event) => {
+  const editButton = event.target.closest("[data-edit-record]");
   const deleteButton = event.target.closest("[data-delete-record]");
-  if (!deleteButton) return;
   const bike = selectedBike();
   if (!bike) return;
+  if (editButton) {
+    const record = bike.records.find((item) => item.id === editButton.dataset.editRecord);
+    if (record) openRecordDialog(record);
+    return;
+  }
+  if (!deleteButton) return;
   bike.records = bike.records.filter((record) => record.id !== deleteButton.dataset.deleteRecord);
   saveState();
   render();
@@ -275,7 +292,7 @@ recordForm.addEventListener("submit", (event) => {
   if (!bike) return;
   const formData = new FormData(recordForm);
   const record = {
-    id: makeId(),
+    id: editingRecordId || makeId(),
     type: String(formData.get("type")),
     date: String(formData.get("date")),
     odometer: Number(formData.get("odometer")) || 0,
@@ -284,7 +301,13 @@ recordForm.addEventListener("submit", (event) => {
     note: String(formData.get("note")).trim(),
   };
   if (!["engine", "gear", "fuel"].includes(record.type) || !record.date) return;
-  bike.records.push(record);
+  if (editingRecordId) {
+    const recordIndex = bike.records.findIndex((item) => item.id === editingRecordId);
+    if (recordIndex === -1) return;
+    bike.records[recordIndex] = record;
+  } else {
+    bike.records.push(record);
+  }
   if (record.odometer) bike.odometer = Math.max(Number(bike.odometer) || 0, record.odometer);
   saveState();
   recordDialog.close();
