@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1980" role="img" aria-labelledby="title description">
+  <title id="title">機車保養里程參考</title>
+  <desc id="description">八項常見機車保養項目與里程參考。週期僅供通用參考，並非特定車款的原廠規範。</desc>
+  <defs>
+    <linearGradient id="header" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#214f42"/>
+      <stop offset="1" stop-color="#357b63"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#213d32" flood-opacity=".08"/>
+    </filter>
+  </defs>
+  <rect width="900" height="1980" rx="34" fill="#f1f5ef"/>
+  <rect x="24" y="24" width="852" height="238" rx="28" fill="url(#header)"/>
+  <circle cx="805" cy="69" r="63" fill="#ffffff" opacity=".07"/>
+  <circle cx="747" cy="219" r="94" fill="#ffffff" opacity=".05"/>
+  <text x="66" y="77" fill="#d3e7d8" font-family="sans-serif" font-size="24" font-weight="700" letter-spacing="4">RIDE CARE  /  車主保養筆記</text>
+  <text x="66" y="151" fill="#ffffff" font-family="sans-serif" font-size="58" font-weight="800">機車保養里程參考</text>
+  <text x="68" y="204" fill="#e2efe5" font-family="sans-serif" font-size="27">把常見項目整理好，陪愛車安心上路</text>
+  <g transform="translate(744 84)" fill="none" stroke="#f4c778" stroke-linecap="round" stroke-linejoin="round" stroke-width="8">
+    <circle cx="30" cy="72" r="20"/>
+    <circle cx="116" cy="72" r="20"/>
+    <path d="M30 72h35l24-39h22l22 39H82L64 48H47"/>
+    <path d="m87 33 12-18h22"/>
+  </g>
+  <text x="54" y="300" fill="#357b63" font-family="sans-serif" font-size="24" font-weight="700" letter-spacing="2">常見項目一覽</text>
+  <g filter="url(#shadow)">
+    <rect x="40" y="326" width="820" height="164" rx="22" fill="#ffffff"/>
+    <rect x="40" y="326" width="12" height="164" rx="6" fill="#ee9c54"/>
+    <text x="78" y="392" fill="#263a35" font-family="sans-serif" font-size="39" font-weight="800">機油</text>
+    <text x="78" y="445" fill="#788780" font-family="sans-serif" font-size="27">定期更換</text>
+    <line x1="591" y1="355" x2="591" y2="461" stroke="#e8ece8" stroke-width="2"/>
+    <text x="726" y="411" text-anchor="middle" fill="#bd6840" font-family="sans-serif" font-size="45" font-weight="800">1,000</text>
+    <text x="726" y="450" text-anchor="middle" fill="#788780" font-family="sans-serif" font-size="20">公里</text>
+    <rect x="40" y="506" width="820" height="164" rx="22" fill="#ffffff"/>
+    <rect x="40" y="506" width="12" height="164" rx="6" fill="#8b78bc"/>
+    <text x="78" y="572" fill="#263a35" font-family="sans-serif" font-size="39" font-weight="800">齒輪油</text>
+    <text x="78" y="625" fill="#788780" font-family="sans-serif" font-size="27">定期更換</text>
+    <line x1="591" y1="535" x2="591" y2="641" stroke="#e8ece8" stroke-width="2"/>
+    <text x="726" y="591" text-anchor="middle" fill="#7061a0" font-family="sans-serif" font-size="45" font-weight="800">2,000</text>
+    <text x="726" y="630" text-anchor="middle" fill="#788780" font-family="sans-serif" font-size="20">公里</text>
+    <rect x="40" y="686" width="820" height="164" rx="22" fill="#ffffff"/>
+    <rect x="40" y="686" width="12" height="164" rx="6" fill="#5c9d84"/>
+    <text x="78" y="752" fill="#263a35" font-family="sans-serif" font-size="39" font-weight="800">空氣濾網</text>
+    <text x="78" y="805" fill="#788780" font-family="sans-serif" font-size="27">定期更換</text>
+    <line x1="591" y1="715" x2="591" y2="821" stroke="#e8ece8" stroke-width="2"/>
+    <text x="726" y="771" text-anchor="middle" fill="#357b63" font-family="sans-serif" font-size="45" font-weight="800">5,000</text>
+    <text x="726" y="810" text-anchor="middle" fill="#788780" font-family="sans-serif" font-size="20">公里</text>
+    <rect x="40" y="866" width="820" height="164" rx="22" fill="#ffffff"/>
+    <rect x="40" y="866" width="12" height="164" rx="6" fill="#4d83b6"/>
+    <text x="78" y="932" fill="#263a35" font-family="sans-serif" font-size="39" font-weight="800">節流閥</text>
+    <text x="78" y="985" fill="#788780" font-family="sans-serif" font-size="27">定期清洗</text>
+    <line x1="591" y1="895" x2="591" y2="1001" stroke="#e8ece8" stroke-width="2"/>
+    <text x="726" y="951" text-anchor="middle" fill="#3c719f" font-family="sans-serif" font-size="45" font-weight="800">6,000</text>
+    <text x="726" y="990" text-anchor="middle" fill="#788780" font-family="sans-serif" font-size="20">公里</text>
+    <rect x="40" y="1046" width="820" height="164" rx="22" fill="#ffffff"/>
+    <rect x="40" y="1046" width="12" height="164" rx="6" fill="#d29347"/>
+    <text x="78" y="1112" fill="#263a35" font-family="sans-serif" font-size="39" font-weight="800">火星塞</text>
+    <text x="78" y="1165" fill="#788780" font-family="sans-serif" font-size="27">定期更換</text>
+    <line x1="591" y1="1075" x2="591" y2="1181" stroke="#e8ece8" stroke-width="2"/>
+    <text x="726" y="1131" text-anchor="middle" fill="#a77736" font-family="sans-serif" font-size="45" font-weight="800">10,000</text>
+    <text x="726" y="1170" text-anchor="middle" fill="#788780" font-family="sans-serif" font-size="20">公里</text>
+    <rect x="40" y="1226" width="820" height="164" rx="22" fill="#ffffff"/>
+    <rect x="40" y="1226" width="12" height="164" rx="6" fill="#d16c52"/>
+    <text x="78" y="1292" fill="#263a35" font-family="sans-serif" font-size="39" font-weight="800">引擎積碳</text>
+    <text x="78" y="1345" fill="#788780" font-family="sans-serif" font-size="27">定期清潔</text>
+    <line x1="591" y1="1255" x2="591" y2="1361" stroke="#e8ece8" stroke-width="2"/>
+    <text x="726" y="1311" text-anchor="middle" fill="#b85d45" font-family="sans-serif" font-size="45" font-weight="800">10,000</text>
+    <text x="726" y="1350" text-anchor="middle" fill="#788780" font-family="sans-serif" font-size="20">公里</text>
+    <rect x="40" y="1406" width="820" height="164" rx="22" fill="#ffffff"/>
+    <rect x="40" y="1406" width="12" height="164" rx="6" fill="#bf6578"/>
+    <text x="78" y="1472" fill="#263a35" font-family="sans-serif" font-size="39" font-weight="800">煞車油</text>
+    <text x="78" y="1525" fill="#788780" font-family="sans-serif" font-size="27">定期更換</text>
+    <line x1="591" y1="1435" x2="591" y2="1541" stroke="#e8ece8" stroke-width="2"/>
+    <text x="726" y="1491" text-anchor="middle" fill="#a84f64" font-family="sans-serif" font-size="45" font-weight="800">12,000</text>
+    <text x="726" y="1530" text-anchor="middle" fill="#788780" font-family="sans-serif" font-size="20">公里</text>
+    <rect x="40" y="1586" width="820" height="164" rx="22" fill="#ffffff"/>
+    <rect x="40" y="1586" width="12" height="164" rx="6" fill="#607984"/>
+    <text x="78" y="1652" fill="#263a35" font-family="sans-serif" font-size="39" font-weight="800">傳動皮帶</text>
+    <text x="78" y="1705" fill="#788780" font-family="sans-serif" font-size="27">檢查／更換</text>
+    <line x1="591" y1="1615" x2="591" y2="1721" stroke="#e8ece8" stroke-width="2"/>
+    <text x="726" y="1671" text-anchor="middle" fill="#526b75" font-family="sans-serif" font-size="45" font-weight="800">15,000</text>
+    <text x="726" y="1710" text-anchor="middle" fill="#788780" font-family="sans-serif" font-size="20">公里</text>
+  </g>
+  <rect x="40" y="1780" width="820" height="164" rx="22" fill="#e3ede4"/>
+  <circle cx="91" cy="1832" r="18" fill="#357b63"/>
+  <text x="85" y="1841" fill="#ffffff" font-family="sans-serif" font-size="26" font-weight="800">!</text>
+  <text x="125" y="1841" fill="#285a48" font-family="sans-serif" font-size="28" font-weight="800">請先確認原廠手冊</text>
+  <text x="76" y="1890" fill="#52635a" font-family="sans-serif" font-size="23">以上里程僅供通用參考，不代表特定車款的原廠規範。</text>
+  <text x="76" y="1923" fill="#52635a" font-family="sans-serif" font-size="23">實際週期會因車款、年份與使用條件而異，亦請留意時間週期。</text>
+</svg>

@@ -117,6 +117,10 @@ footer p { margin-bottom: 5px; }
 .oem-notice { margin: 14px 0; padding: 15px; border: 1px solid #dfeae1; border-radius: 15px; background: #edf5ef; }
 .oem-notice strong { display: block; font-size: 14px; }
 .oem-notice p { margin: 7px 0 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.maintenance-guide-card { margin-top: 12px; }
+.maintenance-guide-card .section-heading { align-items: center; }
+.maintenance-infographic { display: block; width: 100%; height: auto; border-radius: 12px; }
+.maintenance-guide-card figcaption { margin-top: 10px; color: var(--muted); font-size: 10px; line-height: 1.7; }
 .oem-schedule-row { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 11px; }
 .oem-schedule-row:last-child { border-bottom: 0; }
 .oem-schedule-row span:last-child { color: var(--green); text-align: right; font-weight: 600; }
