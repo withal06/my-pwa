@@ -1,4 +1,4 @@
-const CACHE_NAME = "ride-care-v5";
+const CACHE_NAME = "ride-care-v6";
 const APP_FILES = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon.svg", "./icon-apple.png", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {

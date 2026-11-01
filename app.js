@@ -2,6 +2,34 @@ const STORAGE_KEY = "ride-care-data-v1";
 const typeNames = { engine: "機油保養", gear: "齒輪油保養", fuel: "加油" };
 const typeIcons = { engine: "🛢️", gear: "⚙️", fuel: "⛽" };
 const importHeaders = ["機車名稱", "日期", "類型", "里程", "公升", "金額", "保養項目", "備註"];
+const manufacturers = {
+  kymco: {
+    name: "KYMCO 光陽",
+    url: "https://www.kymco.com.tw/manuals",
+    label: "KYMCO 官方使用手冊",
+    description: "依車款查找官方使用手冊",
+    model: (bike) => /gp\s*125/i.test(bike.model || "") ? "https://www.kymco.com.tw/motor/gp-125-eco7" : "",
+  },
+  sym: {
+    name: "SYM 三陽",
+    url: "https://tw.sym-global.com/service",
+    label: "SYM 官方服務專區",
+    description: "前往 SYM 官方服務資訊與車主指南",
+  },
+  yamaha: {
+    name: "Yamaha 山葉",
+    url: "https://www.yamaha-motor.com.tw/service",
+    label: "Yamaha 官方服務資訊",
+    description: "查看 Yamaha 官方服務資訊",
+    model: (bike) => /jog\s*125/i.test(bike.model || "") ? "https://www.yamaha-motor.com.tw/motor/motor_JOG" : "",
+  },
+  honda: {
+    name: "Honda",
+    url: "https://moto.honda-taiwan.com.tw/",
+    label: "Honda 台灣機車官方網站",
+    description: "由 Honda 台灣機車官方網站查找車主資訊",
+  },
+};
 const state = loadState();
 let activeFilter = "all";
 let editingBikeId = null;
@@ -105,6 +133,7 @@ function render() {
   renderReminders(bike);
   renderRecords(bike);
   renderAnalytics(bike);
+  renderOemReferences(bike);
 }
 
 function renderBikes() {
@@ -287,6 +316,44 @@ function renderAnalytics(bike) {
   `).join("")}</div>`;
 }
 
+function renderOemReferences(bike) {
+  const manufacturer = manufacturers[bike.manufacturer];
+  const bikeDetails = [manufacturer?.name, bike.model, bike.modelYear ? `${bike.modelYear} 年式` : ""]
+    .filter(Boolean)
+    .join("・");
+  document.querySelector("#oem-bike-title").textContent = bikeDetails || `${bike.name}｜請補充車廠與車款`;
+
+  const schedules = [
+    { name: "機油保養", mileage: bike.engineIntervalKm, days: bike.engineInterval },
+    { name: "齒輪油保養", mileage: bike.gearIntervalKm, days: bike.gearInterval },
+    ...bike.maintenanceItems.map((item) => ({ name: item.name, mileage: item.intervalKm })),
+  ];
+  document.querySelector("#oem-schedule").innerHTML = `<div class="oem-schedule-list">${schedules.map((item) => {
+    const values = [
+      item.mileage ? `每 ${Number(item.mileage).toLocaleString("zh-TW")} 公里` : "",
+      item.days ? `每 ${Number(item.days).toLocaleString("zh-TW")} 天` : "",
+    ].filter(Boolean);
+    return `<div class="oem-schedule-row"><span>${escapeHtml(item.name)}</span><span>${values.join("・") || "尚未設定里程"}</span></div>`;
+  }).join("")}</div>`;
+
+  const links = (manufacturer
+    ? [[bike.manufacturer, manufacturer]]
+    : Object.entries(manufacturers)).flatMap(([key, source]) => [
+    ...(source.model?.(bike) ? [[`${key}-model`, {
+      label: `${bike.model}｜官方車款資訊`,
+      description: "此連結是車款介紹；保養里程仍請核對該年份使用手冊",
+      url: source.model(bike),
+    }]] : []),
+    [key, source],
+  ]);
+  document.querySelector("#oem-links").innerHTML = links.map(([key, source]) => `
+    <a class="oem-link-card ${key === bike.manufacturer ? "current" : ""}" href="${source.url}" target="_blank" rel="noopener noreferrer">
+      <span><strong>${source.label}</strong><small>${source.description}</small></span>
+      <span class="oem-link-arrow" aria-hidden="true">↗</span>
+    </a>
+  `).join("");
+}
+
 function renderMaintenanceDraft() {
   const container = document.querySelector("#maintenance-item-fields");
   container.innerHTML = maintenanceDraft.map((item, index) => `
@@ -320,7 +387,9 @@ function openBikeDialog(bike = null) {
   bikeForm.reset();
   document.querySelector("#bike-dialog-title").textContent = bike ? "編輯機車" : "新增機車";
   bikeForm.elements.name.value = bike?.name || "";
+  bikeForm.elements.manufacturer.value = bike?.manufacturer || "";
   bikeForm.elements.model.value = bike?.model || "";
+  bikeForm.elements.modelYear.value = bike?.modelYear || "";
   bikeForm.elements.odometer.value = bike?.odometer || "";
   bikeForm.elements.engineInterval.value = bike?.engineInterval || 180;
   bikeForm.elements.gearInterval.value = bike?.gearInterval || 365;
@@ -518,6 +587,11 @@ document.querySelector("#add-maintenance-item").addEventListener("click", () => 
   renderMaintenanceDraft();
 });
 
+document.querySelector("#edit-bike-schedule").addEventListener("click", () => {
+  const bike = selectedBike();
+  if (bike) openBikeDialog(bike);
+});
+
 document.querySelector("#maintenance-item-fields").addEventListener("input", (event) => {
   document.querySelector("#maintenance-error").hidden = true;
   const nameIndex = event.target.dataset.maintenanceName;
@@ -600,7 +674,9 @@ bikeForm.addEventListener("submit", (event) => {
     : { id: makeId(), records: [] };
   if (!bike) return;
   bike.name = String(formData.get("name")).trim();
+  bike.manufacturer = String(formData.get("manufacturer") || "");
   bike.model = String(formData.get("model")).trim();
+  bike.modelYear = Number(formData.get("modelYear")) || "";
   bike.odometer = Number(formData.get("odometer")) || 0;
   bike.engineInterval = Math.max(1, Number(formData.get("engineInterval")) || 180);
   bike.gearInterval = Math.max(1, Number(formData.get("gearInterval")) || 365);

@@ -54,6 +54,7 @@
         <nav class="bike-tabs" aria-label="機車資料頁面">
           <button type="button" class="bike-tab active" data-page="records-page" aria-pressed="true">保養紀錄</button>
           <button type="button" class="bike-tab" data-page="analysis-page" aria-pressed="false">油耗與里程</button>
+          <button type="button" class="bike-tab" data-page="oem-page" aria-pressed="false">原廠建議</button>
         </nav>
 
         <section class="section-block bike-page" id="records-page" aria-labelledby="records-heading">
@@ -92,6 +93,27 @@
             <div id="mileage-history"></div>
           </section>
         </section>
+
+        <section class="section-block bike-page" id="oem-page" aria-labelledby="oem-heading" hidden>
+          <div class="section-heading">
+            <div><p class="eyebrow">MANUFACTURER GUIDE</p><h2 id="oem-heading">原廠保養里程</h2></div>
+          </div>
+          <div class="oem-notice">
+            <strong id="oem-bike-title">請先選擇車款</strong>
+            <p>保養週期會因車款、年份及使用條件不同而異。以下連結為車廠官方資訊；實際里程請以該車款的車主使用手冊為準。</p>
+          </div>
+          <section class="analytics-card" aria-labelledby="oem-schedule-heading">
+            <div class="section-heading"><h3 id="oem-schedule-heading">這台機車已設定的里程提醒</h3></div>
+            <div id="oem-schedule"></div>
+            <button type="button" class="text-button oem-edit-button" id="edit-bike-schedule">調整機車／提醒設定 →</button>
+          </section>
+          <section class="analytics-card" aria-labelledby="oem-links-heading">
+            <div class="section-heading"><h3 id="oem-links-heading">各品牌官方手冊與服務資訊</h3></div>
+            <p class="form-hint">依照登記車款選擇車廠，再確認車主手冊封面上的年份與車型代碼。</p>
+            <div class="oem-link-list" id="oem-links"></div>
+          </section>
+          <p class="oem-disclaimer">提醒：App 中顯示的是你自行設定的提醒，不代表車廠已針對該年份／車型核對。不同版本保養週期可能不同，請勿僅依通用里程表維修。</p>
+        </section>
       </section>
 
       <footer>
@@ -107,7 +129,18 @@
           <button type="button" class="close-button" data-close="bike-dialog" aria-label="關閉">×</button>
         </div>
         <label>機車名稱 <span class="required">*</span><input name="name" required maxlength="30" placeholder="例如：我的小白"></label>
+        <label>車廠
+          <select name="manufacturer">
+            <option value="">尚未選擇</option>
+            <option value="kymco">KYMCO 光陽</option>
+            <option value="sym">SYM 三陽</option>
+            <option value="yamaha">Yamaha 山葉</option>
+            <option value="honda">Honda</option>
+            <option value="other">其他車廠</option>
+          </select>
+        </label>
         <label>車款 <input name="model" maxlength="40" placeholder="例如：KYMCO Like 125"></label>
+        <label>出廠年份 <input name="modelYear" type="number" min="1980" max="2099" step="1" placeholder="選填，請以行照或車主手冊為準"></label>
         <label>目前里程（公里） <input name="odometer" type="number" min="0" step="1" placeholder="選填"></label>
         <div class="interval-fields">
           <label>機油提醒間隔（天）<input name="engineInterval" type="number" min="1" step="1" value="180" required></label>
