@@ -48,6 +48,12 @@ h2 { margin: 0; font-size: 20px; letter-spacing: .02em; }
 .bike-card-mileage { display: block; margin-top: 12px; color: var(--green); font-size: 11px; font-weight: 600; }
 .bike-card-edit { position: absolute; top: 11px; right: 12px; padding: 4px; border: 0; background: transparent; color: var(--muted); font-size: 15px; }
 .section-block { margin-top: 33px; }
+.bike-tabs { display: flex; gap: 7px; margin-top: 22px; padding: 5px; border-radius: 14px; background: #e8ede8; }
+.bike-tab { flex: 1; padding: 10px 12px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 600; }
+.bike-tab.active { background: white; color: var(--green); box-shadow: 0 1px 5px #263a3510; }
+.bike-page.section-block { margin-top: 22px; }
+.section-actions, .import-actions { display: flex; align-items: center; gap: 14px; }
+.records-heading { align-items: flex-end; }
 .reminder-card { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 18px; }
 .reminder-item { min-height: 104px; padding: 15px 16px; border: 1px solid #e8ece8; border-radius: 16px; background: white; }
 .reminder-item.due { border-color: #efcfaf; background: #fffaf4; }
@@ -84,6 +90,38 @@ footer p { margin-bottom: 5px; }
 .modal input:focus, .modal select:focus, .modal textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px #357b631c; }
 .modal textarea { resize: vertical; }
 .interval-fields, .fuel-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.maintenance-settings { margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--line); }
+.maintenance-settings h3, .analytics-card h3 { margin: 0; font-size: 14px; }
+.maintenance-settings .section-heading, .analytics-card .section-heading { align-items: center; margin-bottom: 8px; }
+.form-hint, .analysis-note { color: var(--muted); font-size: 11px; line-height: 1.7; }
+.form-error { margin: 8px 0 0; color: #a5533c; font-size: 11px; }
+.maintenance-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(110px, .7fr) auto; gap: 8px; align-items: end; margin-top: 8px; }
+.maintenance-row label { margin: 0; }
+.maintenance-row input { min-width: 0; }
+.remove-item-button { width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 10px; background: white; color: #a67c6b; font-size: 17px; }
+.analytics-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 14px 0; }
+.analytics-stat { padding: 14px; border: 1px solid var(--line); border-radius: 15px; background: white; }
+.analytics-stat span, .analytics-stat strong { display: block; }
+.analytics-stat span { margin-bottom: 7px; color: var(--muted); font-size: 10px; }
+.analytics-stat strong { font-size: 18px; }
+.analytics-card { margin-top: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: white; }
+.fuel-chart { display: flex; min-height: 150px; align-items: end; gap: 10px; overflow-x: auto; padding: 16px 4px 4px; }
+.fuel-bar-item { display: grid; min-width: 47px; height: 116px; flex: 1; grid-template-rows: 16px 1fr 26px; justify-items: center; color: var(--muted); font-size: 9px; }
+.fuel-bar-value { color: var(--green); font-weight: 700; }
+.fuel-bar-track { display: flex; width: 100%; height: 100%; align-items: end; justify-content: center; }
+.fuel-bar { width: min(28px, 70%); min-height: 5px; border-radius: 7px 7px 3px 3px; background: #8ab99f; }
+.fuel-bar-label { padding-top: 7px; white-space: nowrap; }
+.analysis-list { display: grid; gap: 0; }
+.analysis-row { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 11px; }
+.analysis-row:last-child { border-bottom: 0; }
+.analysis-row span:last-child { text-align: right; color: var(--muted); }
+.analysis-empty { padding: 18px 4px; color: var(--muted); text-align: center; font-size: 11px; line-height: 1.7; }
+.file-button { display: inline-flex; align-items: center; margin: 0 !important; padding: 8px 11px; border: 1px solid var(--line); border-radius: 10px; background: white; color: var(--green) !important; font-size: 11px !important; cursor: pointer; }
+.file-button input { display: none !important; }
+.csv-input { min-height: 150px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace !important; font-size: 11px !important; line-height: 1.6; }
+.import-preview { max-height: 130px; overflow: auto; padding: 10px 12px; border-radius: 10px; background: var(--cream); color: var(--muted); font-size: 11px; line-height: 1.7; white-space: pre-line; }
+.import-preview.has-errors { color: #a5533c; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 .modal-actions { justify-content: flex-end; gap: 9px; margin-top: 22px; }
 .button { padding: 11px 17px; border: 0; border-radius: 11px; font-size: 12px; font-weight: 700; }
 .button.secondary { background: var(--cream); color: var(--muted); }
@@ -98,6 +136,13 @@ footer p { margin-bottom: 5px; }
   .welcome-copy { max-width: 175px; line-height: 1.7; }
   .record-item { grid-template-columns: 38px minmax(0, 1fr) auto; gap: 9px; padding: 11px; }
   .record-icon { width: 36px; height: 36px; }
+  .records-heading { align-items: flex-start; }
+  .section-actions { gap: 9px; }
+  .section-actions .text-button { font-size: 11px; }
+  .maintenance-row { grid-template-columns: minmax(0, 1fr) 106px 34px; gap: 5px; }
+  .maintenance-row input { padding: 10px 8px; font-size: 11px; }
+  .remove-item-button { width: 34px; height: 36px; }
+  .analytics-card { padding: 13px; }
 }
 
 @media (prefers-reduced-motion: no-preference) {

@@ -28,7 +28,7 @@
         <div>
           <p class="eyebrow">YOUR RIDE, WELL CARED FOR</p>
           <h1>每一段路，<span>都安心。</span></h1>
-          <p class="welcome-copy">把保養和加油交給這本小日記。</p>
+          <p class="welcome-copy">記錄保養、管理里程、看懂油耗。</p>
         </div>
         <div class="scooter-art" aria-hidden="true">
           <span class="sun"></span>
@@ -51,21 +51,46 @@
       <section id="bike-content" hidden>
         <section class="reminder-card" id="reminder-card" aria-live="polite"></section>
 
-        <section class="section-block" aria-labelledby="records-heading">
-          <div class="section-heading">
+        <nav class="bike-tabs" aria-label="機車資料頁面">
+          <button type="button" class="bike-tab active" data-page="records-page" aria-pressed="true">保養紀錄</button>
+          <button type="button" class="bike-tab" data-page="analysis-page" aria-pressed="false">油耗與里程</button>
+        </nav>
+
+        <section class="section-block bike-page" id="records-page" aria-labelledby="records-heading">
+          <div class="section-heading records-heading">
             <div>
               <p class="eyebrow">KEEP IT RUNNING</p>
               <h2 id="records-heading">保養與加油</h2>
             </div>
-            <button class="text-button" id="add-record-button" type="button">＋ 記一筆</button>
+            <div class="section-actions">
+              <button class="text-button" id="import-records-button" type="button">批次匯入</button>
+              <button class="text-button" id="add-record-button" type="button">＋ 記一筆</button>
+            </div>
           </div>
           <div class="record-filters" role="group" aria-label="篩選紀錄">
             <button type="button" class="filter-chip active" data-filter="all">全部</button>
             <button type="button" class="filter-chip" data-filter="engine">機油</button>
             <button type="button" class="filter-chip" data-filter="gear">齒輪油</button>
             <button type="button" class="filter-chip" data-filter="fuel">加油</button>
+            <button type="button" class="filter-chip" data-filter="maintenance">其他保養</button>
           </div>
           <div class="record-list" id="record-list"></div>
+        </section>
+
+        <section class="section-block bike-page" id="analysis-page" aria-labelledby="analysis-heading" hidden>
+          <div class="section-heading">
+            <div><p class="eyebrow">FUEL & DISTANCE</p><h2 id="analysis-heading">油耗與里程</h2></div>
+          </div>
+          <p class="analysis-note">油耗為相鄰加油紀錄的里程差 ÷ 後一次加油量；加油時都加滿，估算才較有參考價值。</p>
+          <div class="analytics-summary" id="analytics-summary"></div>
+          <section class="analytics-card" aria-labelledby="fuel-chart-heading">
+            <div class="section-heading"><h3 id="fuel-chart-heading">每次加油區間油耗</h3></div>
+            <div id="fuel-chart"></div>
+          </section>
+          <section class="analytics-card" aria-labelledby="mileage-history-heading">
+            <div class="section-heading"><h3 id="mileage-history-heading">近期里程紀錄</h3></div>
+            <div id="mileage-history"></div>
+          </section>
         </section>
       </section>
 
@@ -88,6 +113,19 @@
           <label>機油提醒間隔（天）<input name="engineInterval" type="number" min="1" step="1" value="180" required></label>
           <label>齒輪油提醒間隔（天）<input name="gearInterval" type="number" min="1" step="1" value="365" required></label>
         </div>
+        <div class="interval-fields">
+          <label>機油里程間隔（公里）<input name="engineIntervalKm" type="number" min="1" step="1" placeholder="依車主手冊設定"></label>
+          <label>齒輪油里程間隔（公里）<input name="gearIntervalKm" type="number" min="1" step="1" placeholder="依車主手冊設定"></label>
+        </div>
+        <section class="maintenance-settings" aria-labelledby="maintenance-settings-heading">
+          <div class="section-heading">
+            <h3 id="maintenance-settings-heading">其他定期保養</h3>
+            <button type="button" class="text-button" id="add-maintenance-item">＋ 新增項目</button>
+          </div>
+          <p class="form-hint">依機車使用手冊設定里程；例如空濾、火星塞、煞車油。</p>
+          <div id="maintenance-item-fields"></div>
+          <p class="form-error" id="maintenance-error" role="alert" hidden></p>
+        </section>
         <div class="modal-actions">
           <button type="button" class="button secondary" data-close="bike-dialog">取消</button>
           <button type="submit" class="button primary">儲存機車</button>
@@ -118,6 +156,27 @@
         <div class="modal-actions">
           <button type="button" class="button secondary" data-close="record-dialog">取消</button>
           <button type="submit" class="button primary">儲存紀錄</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="import-dialog" class="modal">
+      <form id="import-form">
+        <div class="modal-heading">
+          <div><p class="eyebrow">BATCH IMPORT</p><h2>批次匯入紀錄</h2></div>
+          <button type="button" class="close-button" data-close="import-dialog" aria-label="關閉">×</button>
+        </div>
+        <p class="form-hint">選擇 CSV 檔或貼上內容。欄位順序：機車名稱、日期、類型、里程、公升、金額、保養項目、備註。類型使用「機油」、「齒輪油」、「加油」或「其他保養」。日期請用 YYYY-MM-DD；其他保養項目需先在機車設定中建立。</p>
+        <div class="import-actions">
+          <label class="file-button">選擇 CSV 檔<input id="import-file" type="file" accept=".csv,text/csv"></label>
+          <button type="button" class="text-button" id="download-csv-template">下載範例</button>
+        </div>
+        <label class="sr-only" for="import-csv">CSV 批次紀錄內容</label>
+        <textarea id="import-csv" class="csv-input" rows="8" spellcheck="false" placeholder="機車名稱,日期,類型,里程,公升,金額,保養項目,備註"></textarea>
+        <div id="import-preview" class="import-preview" aria-live="polite">貼上或選擇 CSV 檔後，會先檢查資料。</div>
+        <div class="modal-actions">
+          <button type="button" class="button secondary" data-close="import-dialog">取消</button>
+          <button type="submit" class="button primary" id="confirm-import" disabled>匯入紀錄</button>
         </div>
       </form>
     </dialog>
