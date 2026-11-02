@@ -496,13 +496,13 @@ function previewImport() {
       const [bikeName, rawDate, typeLabel, odometerText, litersText, costText, itemName, note] = values;
       const bike = state.bikes.find((entry) => entry.name.trim().toLocaleLowerCase() === bikeName.toLocaleLowerCase());
       const date = normalizeImportDate(rawDate);
-      const type = { "機油": "engine", "機油保養": "engine", "齒輪油": "gear", "齒輪油保養": "gear", "加油": "fuel", "其他保養": "maintenance" }[typeLabel];
+      const type = { "機油": "engine", "機油保養": "engine", "齒輪油": "gear", "齒輪油保養": "gear", "加油": "fuel", "其他保養": "maintenance", "其它項目": "maintenance" }[typeLabel];
       const odometer = odometerText ? Number(odometerText) : 0;
       const liters = litersText ? Number(litersText) : 0;
       const cost = costText ? Number(costText) : 0;
       if (!bike) errors.push(`第 ${line} 列：找不到機車「${bikeName}」。請確認名稱與車庫中的名稱相同。`);
       if (!date) errors.push(`第 ${line} 列：日期格式錯誤，請使用 YYYY-MM-DD。`);
-      if (!type) errors.push(`第 ${line} 列：類型請填機油、齒輪油、加油或其他保養。`);
+      if (!type) errors.push(`第 ${line} 列：類型請填機油、齒輪油、加油或其它項目。`);
       if (odometerText && (!Number.isFinite(odometer) || odometer < 0)) errors.push(`第 ${line} 列：里程必須是大於或等於 0 的數字。`);
       if (type === "fuel" && (!Number.isFinite(liters) || liters <= 0)) errors.push(`第 ${line} 列：加油紀錄的公升數必須大於 0。`);
       if (litersText && (!Number.isFinite(liters) || liters < 0)) errors.push(`第 ${line} 列：公升數格式錯誤。`);
