@@ -1,7 +1,12 @@
 const STORAGE_KEY = "ride-care-data-v1";
 const typeNames = { engine: "機油保養", gear: "齒輪油保養", fuel: "加油" };
 const typeIcons = { engine: "🛢️", gear: "⚙️", fuel: "⛽" };
-const importHeaders = ["機車名稱", "日期", "類型", "里程", "公升", "金額", "保養項目", "備註"];
+const legacyImportHeaders = ["機車名稱", "日期", "類型", "里程", "公升", "金額", "保養項目", "備註"];
+const legacySectionImportHeaders = ["日期", "類型", "總里程", "加油公升", "金額", "備註"];
+const importHeaders = {
+  maintenance: ["日期", "總里程", "保養內容", "花費金額", "備註"],
+  fuel: ["日期", "總里程", "加油量", "加油金額", "備註"],
+};
 const manufacturers = {
   kymco: {
     name: "KYMCO 光陽",
@@ -31,21 +36,23 @@ const manufacturers = {
   },
 };
 const state = loadState();
-let activeFilter = "all";
 let editingBikeId = null;
 let editingRecordId = null;
+let editingRecordType = "maintenance";
 let maintenanceDraft = [];
 let validImportRows = [];
+let currentImportType = "maintenance";
+let currentCsvActionType = "maintenance";
 
 const bikeList = document.querySelector("#bike-list");
 const bikeContent = document.querySelector("#bike-content");
-const reminderCard = document.querySelector("#reminder-card");
-const recordList = document.querySelector("#record-list");
+const maintenanceRecordList = document.querySelector("#maintenance-record-list");
+const fuelRecordList = document.querySelector("#fuel-record-list");
 const analyticsSummary = document.querySelector("#analytics-summary");
 const fuelChart = document.querySelector("#fuel-chart");
-const mileageHistory = document.querySelector("#mileage-history");
 const bikeDialog = document.querySelector("#bike-dialog");
 const recordDialog = document.querySelector("#record-dialog");
+const csvActionsDialog = document.querySelector("#csv-actions-dialog");
 const importDialog = document.querySelector("#import-dialog");
 const bikeForm = document.querySelector("#bike-form");
 const recordForm = document.querySelector("#record-form");
@@ -112,6 +119,10 @@ function escapeHtml(value) {
   })[char]);
 }
 
+function escapeCsvCell(value) {
+  return `"${String(value ?? "").replaceAll('"', '""')}"`;
+}
+
 function formatDate(value, options = { year: "numeric", month: "numeric", day: "numeric" }) {
   if (!value) return "尚無紀錄";
   const date = new Date(`${value}T00:00:00`);
@@ -130,8 +141,8 @@ function render() {
   const bike = selectedBike();
   bikeContent.hidden = !bike;
   if (!bike) return;
-  renderReminders(bike);
-  renderRecords(bike);
+  renderRecords(bike, "maintenance");
+  renderRecords(bike, "fuel");
   renderAnalytics(bike);
   renderOemReferences(bike);
 }
@@ -170,38 +181,6 @@ function dueInfo(bike, type, interval) {
   return { date: dueDate, hint, due: daysLeft <= 14 };
 }
 
-function renderReminders(bike) {
-  const reminders = [
-    { type: "engine", title: "機油保養", interval: bike.engineInterval, intervalKm: bike.engineIntervalKm },
-    { type: "gear", title: "齒輪油保養", interval: bike.gearInterval, intervalKm: bike.gearIntervalKm },
-    ...bike.maintenanceItems.map((item) => ({
-      type: "maintenance",
-      title: item.name,
-      itemId: item.id,
-      intervalKm: item.intervalKm,
-    })),
-  ];
-  reminderCard.innerHTML = reminders.map((reminder) => {
-    const dateInfo = reminder.type === "maintenance"
-      ? null
-      : dueInfo(bike, reminder.type, reminder.interval);
-    const mileageInfo = reminder.intervalKm
-      ? dueMileageInfo(bike, reminder.type, reminder.itemId, reminder.intervalKm)
-      : null;
-    const hints = [];
-    if (dateInfo) hints.push(dateInfo.hint);
-    if (mileageInfo) hints.push(mileageInfo.hint);
-    if (!dateInfo && !mileageInfo) hints.push("依車主手冊設定里程間隔");
-    const due = Boolean(dateInfo?.due || mileageInfo?.due);
-    return `<article class="reminder-item ${due ? "due" : ""}">
-      <span class="reminder-label">下次${escapeHtml(reminder.title)}</span>
-      ${dateInfo ? `<strong class="reminder-date">${dateInfo.date ? formatDate(dateInfo.date) : "尚無紀錄"}</strong>` : ""}
-      ${mileageInfo ? `<strong class="reminder-date">${mileageInfo.target ? `${mileageInfo.target.toLocaleString("zh-TW")} 公里` : "尚無里程紀錄"}</strong>` : ""}
-      <span class="reminder-hint">${escapeHtml(hints.join("・"))}</span>
-    </article>`;
-  }).join("");
-}
-
 function dueMileageInfo(bike, type, itemId, intervalKm) {
   const record = bike.records
     .filter((entry) => entry.type === type && (type !== "maintenance" || entry.itemId === itemId) && Number(entry.odometer) > 0)
@@ -216,34 +195,47 @@ function dueMileageInfo(bike, type, itemId, intervalKm) {
 }
 
 function recordTitle(bike, record) {
+  if (record.type === "fuel") return "加油";
+  if (record.maintenanceContent) return record.maintenanceContent;
   if (record.type === "maintenance") {
-    return bike.maintenanceItems.find((item) => item.id === record.itemId)?.name || record.itemName || "其他保養";
+    return bike.maintenanceItems.find((item) => item.id === record.itemId)?.name || record.itemName || "其它保養";
   }
   return typeNames[record.type] || "其他紀錄";
 }
 
-function renderRecords(bike) {
+function maintenanceTypeForContent(content) {
+  const normalized = content.toLocaleLowerCase();
+  if (normalized.includes("齒輪油")) return "gear";
+  if (normalized.includes("機油")) return "engine";
+  return "maintenance";
+}
+
+function renderRecords(bike, type) {
+  const recordList = type === "fuel" ? fuelRecordList : maintenanceRecordList;
   const records = [...bike.records]
-    .filter((record) => activeFilter === "all" || record.type === activeFilter)
+    .filter((record) => type === "fuel" ? record.type === "fuel" : record.type !== "fuel")
     .sort((a, b) => b.date.localeCompare(a.date));
   if (!records.length) {
-    recordList.innerHTML = '<div class="empty-state">還沒有這類紀錄。<br>按「記一筆」新增保養或加油資料。</div>';
+    recordList.innerHTML = type === "fuel"
+      ? '<div class="empty-state">還沒有加油紀錄。<br>新增加油量、金額與當時里程，即可分析油耗。</div>'
+      : '<div class="empty-state">還沒有保養紀錄。<br>新增保養日期、里程、內容與花費。</div>';
     return;
   }
   recordList.innerHTML = records.map((record) => {
-    const detail = record.type === "fuel"
-      ? [record.liters ? `${Number(record.liters).toLocaleString("zh-TW")} 公升` : "", record.cost ? `$${Number(record.cost).toLocaleString("zh-TW")}` : ""].filter(Boolean).join("・")
-      : record.odometer ? `${Number(record.odometer).toLocaleString("zh-TW")} 公里` : "";
-    const icon = record.type === "maintenance" ? "🔧" : typeIcons[record.type] || "📝";
+    const detail = type === "fuel"
+      ? `${Number(record.liters).toLocaleString("zh-TW")} 公升・$${Number(record.cost || 0).toLocaleString("zh-TW")}`
+      : `${Number(record.odometer || 0).toLocaleString("zh-TW")} 公里・$${Number(record.cost || 0).toLocaleString("zh-TW")}`;
+    const note = [record.odometer ? `${Number(record.odometer).toLocaleString("zh-TW")} 公里` : "",
+      record.note || ""].filter(Boolean).join("・");
+    const icon = type === "fuel" ? typeIcons.fuel : "🔧";
     return `<article class="record-item">
       <span class="record-icon" aria-hidden="true">${icon}</span>
       <div class="record-main">
         <strong>${escapeHtml(recordTitle(bike, record))}</strong>
-        <span>${formatDate(record.date)}${record.note ? `・${escapeHtml(record.note)}` : ""}</span>
+        <span>${formatDate(record.date)}${note ? `・${escapeHtml(note)}` : ""}</span>
       </div>
       <div class="record-trailing">
         <strong>${escapeHtml(detail || "已記錄")}</strong>
-        ${record.odometer && record.type === "fuel" ? `<span>${Number(record.odometer).toLocaleString("zh-TW")} 公里</span>` : ""}
         <div class="record-actions">
           <button class="record-edit" type="button" data-edit-record="${escapeHtml(record.id)}">編輯</button>
           <button class="record-delete" type="button" data-delete-record="${escapeHtml(record.id)}">刪除</button>
@@ -277,7 +269,7 @@ function renderAnalytics(bike) {
   const averageEfficiency = intervalLiters ? totalKilometers / intervalLiters : 0;
   const totalFuel = fills.reduce((total, record) => total + (Number(record.liters) || 0), 0);
   const totalCost = fills.reduce((total, record) => total + (Number(record.cost) || 0), 0);
-  const odometers = bike.records
+  const odometers = fills
     .filter((record) => Number(record.odometer) > 0)
     .map((record) => ({ date: record.date, odometer: Number(record.odometer) }))
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -307,13 +299,6 @@ function renderAnalytics(bike) {
     }).join("")}</div>`;
   }
 
-  if (!odometers.length) {
-    mileageHistory.innerHTML = '<div class="analysis-empty">新增含里程的保養或加油紀錄，即可查看里程變化。</div>';
-    return;
-  }
-  mileageHistory.innerHTML = `<div class="analysis-list">${odometers.slice(-8).reverse().map((entry) => `
-    <div class="analysis-row"><span>${formatDate(entry.date)}</span><span>${entry.odometer.toLocaleString("zh-TW")} 公里</span></div>
-  `).join("")}</div>`;
 }
 
 function renderOemReferences(bike) {
@@ -365,23 +350,6 @@ function renderMaintenanceDraft() {
   `).join("");
 }
 
-function updateRecordTypeOptions(bike, record = null) {
-  const select = recordForm.elements.type;
-  select.innerHTML = `
-    <option value="engine">機油保養</option>
-    <option value="gear">齒輪油保養</option>
-    <option value="fuel">加油</option>
-    ${(bike.maintenanceItems || []).map((item) => `<option value="maintenance:${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join("")}
-  `;
-  if (record?.type === "maintenance" && !bike.maintenanceItems.some((item) => item.id === record.itemId)) {
-    const option = document.createElement("option");
-    option.value = `maintenance:${record.itemId}`;
-    option.textContent = record.itemName || "已移除的保養項目";
-    select.append(option);
-  }
-  select.value = record?.type === "maintenance" ? `maintenance:${record.itemId}` : record?.type || "engine";
-}
-
 function openBikeDialog(bike = null) {
   editingBikeId = bike?.id || null;
   bikeForm.reset();
@@ -403,26 +371,39 @@ function openBikeDialog(bike = null) {
   bikeForm.elements.name.focus();
 }
 
-function openRecordDialog(record = null) {
+function openRecordDialog(record = null, type = "maintenance") {
   const bike = selectedBike();
   if (!bike) return;
   editingRecordId = record?.id || null;
+  editingRecordType = record?.type === "fuel" ? "fuel" : type;
   recordForm.reset();
-  document.querySelector("#record-dialog-title").textContent = record ? "編輯紀錄" : "新增紀錄";
-  updateRecordTypeOptions(bike, record);
+  document.querySelector("#record-dialog-title").textContent = record
+    ? editingRecordType === "fuel" ? "編輯加油紀錄" : "編輯保養紀錄"
+    : editingRecordType === "fuel" ? "新增加油紀錄" : "新增保養紀錄";
   recordForm.elements.date.value = record?.date || dateInputValue(new Date());
   recordForm.elements.odometer.value = record?.odometer || "";
   recordForm.elements.liters.value = record?.liters || "";
-  recordForm.elements.cost.value = record?.cost || "";
+  recordForm.elements.maintenanceContent.value = record?.maintenanceContent || (record && record.type !== "fuel" ? recordTitle(bike, record) : "");
+  recordForm.elements.maintenanceCost.value = editingRecordType === "maintenance" ? record?.cost ?? "" : "";
+  recordForm.elements.fuelCost.value = editingRecordType === "fuel" ? record?.cost ?? "" : "";
   recordForm.elements.note.value = record?.note || "";
-  updateFuelFields();
+  updateRecordFields();
   recordDialog.showModal();
 }
 
-function updateFuelFields() {
-  const isFuel = recordForm.elements.type.value === "fuel";
-  document.querySelector("#fuel-fields").hidden = !isFuel;
-  recordForm.elements.liters.required = isFuel;
+function updateRecordFields() {
+  const isFuel = editingRecordType === "fuel";
+  const maintenanceFields = document.querySelector("#maintenance-fields");
+  const fuelFields = document.querySelector("#fuel-fields");
+  maintenanceFields.hidden = isFuel;
+  fuelFields.hidden = !isFuel;
+  for (const field of maintenanceFields.querySelectorAll("input")) {
+    field.disabled = isFuel;
+  }
+  for (const field of fuelFields.querySelectorAll("input")) {
+    field.disabled = !isFuel;
+    field.required = isFuel;
+  }
 }
 
 function parseCsv(text) {
@@ -471,6 +452,69 @@ function normalizeImportDate(value) {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+function parseSectionImport(rows, type) {
+  const dataRows = [];
+  const errors = [];
+  let bikeName = "";
+  let sectionFormat = "";
+  let expectsHeaders = false;
+  rows.forEach((columns, index) => {
+    const line = index + 1;
+    if (columns.length === 1) {
+      bikeName = columns[0];
+      sectionFormat = "";
+      expectsHeaders = true;
+      return;
+    }
+    if (columns.length === importHeaders[type].length
+      && importHeaders[type].every((header, headerIndex) => columns[headerIndex] === header)) {
+      if (!bikeName) errors.push(`第 ${line} 列：標題欄前請先填寫機車名稱。`);
+      sectionFormat = type;
+      expectsHeaders = false;
+      return;
+    }
+    if (columns.length === legacySectionImportHeaders.length
+      && legacySectionImportHeaders.every((header, headerIndex) => columns[headerIndex] === header)) {
+      if (!bikeName) errors.push(`第 ${line} 列：標題欄前請先填寫機車名稱。`);
+      sectionFormat = "legacy";
+      expectsHeaders = false;
+      return;
+    }
+    if (expectsHeaders) {
+      errors.push(`第 ${line} 列：機車名稱「${bikeName}」後的標題欄不符合${type === "fuel" ? "加油" : "保養"} CSV 格式。`);
+      expectsHeaders = false;
+      return;
+    }
+    if (!bikeName || !sectionFormat) {
+      errors.push(`第 ${line} 列：請先填寫機車名稱，再加入標題欄與紀錄。`);
+      return;
+    }
+    if (sectionFormat === "legacy") {
+      if (columns.length > legacySectionImportHeaders.length) {
+        errors.push(`第 ${line} 列：欄位數超過舊格式標題欄。`);
+        return;
+      }
+      dataRows.push({ columns: [bikeName, ...columns.slice(0, 5), "", columns[5] || ""], line });
+      return;
+    }
+    if (columns.length > importHeaders[type].length) {
+      errors.push(`第 ${line} 列：欄位數超過標題欄，若內容含逗號請用雙引號括起來。`);
+      return;
+    }
+    const values = [...columns, ...Array(importHeaders[type].length - columns.length).fill("")];
+    const [date, odometer, contentOrLiters, cost, note] = values;
+    dataRows.push({
+      columns: type === "fuel"
+        ? [bikeName, date, "加油", odometer, contentOrLiters, cost, "", note]
+        : [bikeName, date, "其它項目", odometer, "", cost, contentOrLiters, note],
+      line,
+    });
+  });
+  if (expectsHeaders) errors.push(`機車名稱「${bikeName}」後缺少 CSV 標題欄。`);
+  if (errors.length) throw new Error(errors.join("\n"));
+  return dataRows;
+}
+
 function previewImport() {
   const preview = document.querySelector("#import-preview");
   const confirmButton = document.querySelector("#confirm-import");
@@ -479,47 +523,58 @@ function previewImport() {
   try {
     const rows = parseCsv(document.querySelector("#import-csv").value.replace(/^\uFEFF/, ""));
     if (!rows.length) throw new Error("請選擇 CSV 檔或貼上資料。");
-    const headers = rows.shift().map((header) => header.trim());
-    if (headers.length !== importHeaders.length || importHeaders.some((header, index) => headers[index] !== header)) {
-      throw new Error(`CSV 標題欄需依序為：${importHeaders.join("、")}`);
+    const firstRow = rows[0].map((header) => header.trim());
+    let dataRows;
+    if (firstRow.length === legacyImportHeaders.length
+      && legacyImportHeaders.every((header, index) => firstRow[index] === header)) {
+      dataRows = rows.slice(1).map((columns, index) => ({ columns, line: index + 2 }));
+    } else {
+      dataRows = parseSectionImport(rows, currentImportType);
     }
-    if (!rows.length) throw new Error("CSV 內沒有可匯入的紀錄。");
-    if (rows.length > 500) throw new Error("單次最多匯入 500 筆紀錄。");
+    if (!dataRows.length) throw new Error("CSV 內沒有可匯入的紀錄。");
+    if (dataRows.length > 500) throw new Error("單次最多匯入 500 筆紀錄。");
     const errors = [];
-    rows.forEach((columns, index) => {
-      const line = index + 2;
-      if (columns.length > importHeaders.length) {
+    dataRows.forEach(({ columns, line }) => {
+      if (columns.length > legacyImportHeaders.length) {
         errors.push(`第 ${line} 列：欄位數超過標題欄，若內容含逗號請用雙引號括起來。`);
         return;
       }
-      const values = [...columns, ...Array(Math.max(0, importHeaders.length - columns.length)).fill("")];
+      const values = [...columns, ...Array(Math.max(0, legacyImportHeaders.length - columns.length)).fill("")];
       const [bikeName, rawDate, typeLabel, odometerText, litersText, costText, itemName, note] = values;
       const bike = state.bikes.find((entry) => entry.name.trim().toLocaleLowerCase() === bikeName.toLocaleLowerCase());
       const date = normalizeImportDate(rawDate);
-      const type = { "機油": "engine", "機油保養": "engine", "齒輪油": "gear", "齒輪油保養": "gear", "加油": "fuel", "其他保養": "maintenance", "其它項目": "maintenance" }[typeLabel];
+      const type = {
+        "機油": "engine", "機油保養": "engine", "齒輪油": "gear", "齒輪油保養": "gear",
+        "加油": "fuel", "其他保養": "maintenance", "其它項目": "maintenance",
+      }[typeLabel];
       const odometer = odometerText ? Number(odometerText) : 0;
       const liters = litersText ? Number(litersText) : 0;
       const cost = costText ? Number(costText) : 0;
       if (!bike) errors.push(`第 ${line} 列：找不到機車「${bikeName}」。請確認名稱與車庫中的名稱相同。`);
       if (!date) errors.push(`第 ${line} 列：日期格式錯誤，請使用 YYYY-MM-DD。`);
       if (!type) errors.push(`第 ${line} 列：類型請填機油、齒輪油、加油或其它項目。`);
-      if (odometerText && (!Number.isFinite(odometer) || odometer < 0)) errors.push(`第 ${line} 列：里程必須是大於或等於 0 的數字。`);
+      if (type && (currentImportType === "fuel") !== (type === "fuel")) {
+        errors.push(`第 ${line} 列：這是${type === "fuel" ? "加油" : "保養"}紀錄，請使用對應的 CSV 匯入頁面。`);
+      }
+      if (!odometerText || !Number.isFinite(odometer) || odometer < 0) errors.push(`第 ${line} 列：總里程必須是大於或等於 0 的數字。`);
       if (type === "fuel" && (!Number.isFinite(liters) || liters <= 0)) errors.push(`第 ${line} 列：加油紀錄的公升數必須大於 0。`);
       if (litersText && (!Number.isFinite(liters) || liters < 0)) errors.push(`第 ${line} 列：公升數格式錯誤。`);
-      if (costText && (!Number.isFinite(cost) || cost < 0)) errors.push(`第 ${line} 列：金額必須是大於或等於 0 的數字。`);
+      if (!costText || !Number.isFinite(cost) || cost < 0) errors.push(`第 ${line} 列：金額必須是大於或等於 0 的數字。`);
+      if (type === "maintenance" && !itemName) errors.push(`第 ${line} 列：請填寫保養內容。`);
       let maintenanceItem = null;
-      if (bike && type === "maintenance") {
+      if (bike && type === "maintenance" && itemName) {
         maintenanceItem = bike.maintenanceItems.find((item) => item.name.trim().toLocaleLowerCase() === itemName.toLocaleLowerCase());
-        if (!maintenanceItem) errors.push(`第 ${line} 列：機車「${bike.name}」尚未設定保養項目「${itemName}」。`);
       }
-      if (bike && date && type && !(type === "maintenance" && !maintenanceItem)) {
+      if (bike && date && type && itemName !== undefined && odometerText && costText) {
         validImportRows.push({
           bike,
           record: {
             id: makeId(),
-            type,
+            type: type === "maintenance" && maintenanceItem ? "maintenance"
+              : type === "maintenance" ? maintenanceTypeForContent(itemName) : type,
             itemId: maintenanceItem?.id || "",
             itemName: maintenanceItem?.name || "",
+            maintenanceContent: ["maintenance", "engine", "gear"].includes(type) ? itemName : "",
             date,
             odometer,
             liters,
@@ -535,7 +590,16 @@ function previewImport() {
       confirmButton.disabled = true;
       return;
     }
-    preview.textContent = `檢查完成：${validImportRows.length} 筆有效紀錄。確認後會一次匯入。`;
+    const replacementSummary = [...new Set(validImportRows.map(({ bike }) => bike))].map((bike) => {
+      const oldCount = bike.records.filter((record) => currentImportType === "fuel"
+        ? record.type === "fuel"
+        : record.type !== "fuel").length;
+      const recordTypeName = currentImportType === "fuel" ? "加油" : "保養";
+      return `${bike.name}（原有 ${oldCount} 筆${recordTypeName}紀錄）`;
+    }).join("、");
+    const recordTypeName = currentImportType === "fuel" ? "加油" : "保養";
+    const preservedTypeName = currentImportType === "fuel" ? "保養" : "加油";
+    preview.textContent = `檢查完成：${validImportRows.length} 筆有效紀錄。\n按下匯入後，將取代以下機車的舊${recordTypeName}紀錄（${preservedTypeName}紀錄會保留）：${replacementSummary}。`;
     confirmButton.disabled = false;
   } catch (error) {
     preview.classList.add("has-errors");
@@ -580,8 +644,8 @@ function checkDueNotifications() {
 }
 
 document.querySelector("#add-bike-button").addEventListener("click", () => openBikeDialog());
-document.querySelector("#add-record-button").addEventListener("click", () => openRecordDialog());
-document.querySelector("#record-type").addEventListener("change", updateFuelFields);
+document.querySelector("#add-maintenance-button").addEventListener("click", () => openRecordDialog(null, "maintenance"));
+document.querySelector("#add-fuel-button").addEventListener("click", () => openRecordDialog(null, "fuel"));
 document.querySelector("#add-maintenance-item").addEventListener("click", () => {
   maintenanceDraft.push({ id: makeId(), name: "", intervalKm: "" });
   renderMaintenanceDraft();
@@ -633,29 +697,24 @@ bikeList.addEventListener("click", (event) => {
   }
 });
 
-recordList.addEventListener("click", (event) => {
+function handleRecordListClick(event) {
   const editButton = event.target.closest("[data-edit-record]");
   const deleteButton = event.target.closest("[data-delete-record]");
   const bike = selectedBike();
   if (!bike) return;
   if (editButton) {
     const record = bike.records.find((item) => item.id === editButton.dataset.editRecord);
-    if (record) openRecordDialog(record);
+    if (record) openRecordDialog(record, record.type === "fuel" ? "fuel" : "maintenance");
     return;
   }
   if (!deleteButton) return;
   bike.records = bike.records.filter((record) => record.id !== deleteButton.dataset.deleteRecord);
   saveState();
   render();
-});
+}
 
-document.querySelectorAll(".filter-chip").forEach((button) => {
-  button.addEventListener("click", () => {
-    activeFilter = button.dataset.filter;
-    document.querySelectorAll(".filter-chip").forEach((chip) => chip.classList.toggle("active", chip === button));
-    renderRecords(selectedBike());
-  });
-});
+maintenanceRecordList.addEventListener("click", handleRecordListClick);
+fuelRecordList.addEventListener("click", handleRecordListClick);
 
 bikeForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -704,21 +763,26 @@ recordForm.addEventListener("submit", (event) => {
   const bike = selectedBike();
   if (!bike) return;
   const formData = new FormData(recordForm);
-  const selectedType = String(formData.get("type"));
-  const itemId = selectedType.startsWith("maintenance:") ? selectedType.slice("maintenance:".length) : "";
-  const maintenanceItem = bike.maintenanceItems.find((item) => item.id === itemId);
+  const maintenanceContent = String(formData.get("maintenanceContent") || "").trim();
+  const normalizedContent = maintenanceContent.toLocaleLowerCase();
+  const maintenanceItem = bike.maintenanceItems.find((item) => item.name.trim().toLocaleLowerCase() === normalizedContent);
+  const maintenanceType = maintenanceItem ? "maintenance" : maintenanceTypeForContent(maintenanceContent);
   const record = {
     id: editingRecordId || makeId(),
-    type: itemId ? "maintenance" : selectedType,
-    itemId,
-    itemName: maintenanceItem?.name || (itemId ? String(recordForm.elements.type.selectedOptions[0]?.textContent || "") : ""),
+    type: editingRecordType === "fuel" ? "fuel" : maintenanceType,
+    itemId: maintenanceItem?.id || "",
+    itemName: maintenanceItem?.name || "",
+    maintenanceContent: editingRecordType === "fuel" ? "" : maintenanceContent,
     date: String(formData.get("date")),
     odometer: Number(formData.get("odometer")) || 0,
     liters: Number(formData.get("liters")) || 0,
-    cost: Number(formData.get("cost")) || 0,
+    cost: Number(formData.get(editingRecordType === "fuel" ? "fuelCost" : "maintenanceCost")) || 0,
     note: String(formData.get("note")).trim(),
   };
-  if (!["engine", "gear", "fuel", "maintenance"].includes(record.type) || !record.date) return;
+  if (!["engine", "gear", "fuel", "maintenance"].includes(record.type) || !record.date
+    || !Number.isFinite(record.odometer) || record.odometer < 0
+    || (record.type === "fuel" && (record.liters <= 0 || !Number.isFinite(record.liters)))
+    || (record.type !== "fuel" && !maintenanceContent)) return;
   if (editingRecordId) {
     const recordIndex = bike.records.findIndex((item) => item.id === editingRecordId);
     if (recordIndex === -1) return;
@@ -732,14 +796,42 @@ recordForm.addEventListener("submit", (event) => {
   render();
 });
 
-document.querySelector("#import-records-button").addEventListener("click", () => {
+function openImportDialog(type) {
+  currentImportType = type;
   document.querySelector("#import-csv").value = "";
   document.querySelector("#import-file").value = "";
+  document.querySelector("#import-dialog-title").textContent = type === "fuel" ? "匯入加油紀錄" : "匯入保養紀錄";
+  const recordTypeName = type === "fuel" ? "加油" : "保養";
+  const preservedTypeName = type === "fuel" ? "保養" : "加油";
+  document.querySelector("#import-help").textContent = `每台機車先填名稱，下一列填「${importHeaders[type].join("、")}」標題，再逐列填寫資料。日期使用 YYYY-MM-DD。確認匯入後，會取代 CSV 所列機車的舊${recordTypeName}紀錄，${preservedTypeName}紀錄會保留。`;
+  document.querySelector("#import-csv").placeholder = `我的小白\n${importHeaders[type].join(",")}`;
   document.querySelector("#import-preview").textContent = "貼上或選擇 CSV 檔後，會先檢查資料。";
   document.querySelector("#import-preview").classList.remove("has-errors");
   document.querySelector("#confirm-import").disabled = true;
   validImportRows = [];
   importDialog.showModal();
+}
+
+function openCsvActionsDialog(type) {
+  currentCsvActionType = type;
+  document.querySelector("#csv-actions-title").textContent = `${type === "fuel" ? "加油" : "保養"} CSV`;
+  csvActionsDialog.showModal();
+}
+
+document.querySelector("#maintenance-csv-button").addEventListener("click", () => openCsvActionsDialog("maintenance"));
+document.querySelector("#fuel-csv-button").addEventListener("click", () => openCsvActionsDialog("fuel"));
+document.querySelector("#csv-actions-cancel").addEventListener("click", () => csvActionsDialog.close());
+document.querySelector("#csv-actions-import").addEventListener("click", () => {
+  csvActionsDialog.close();
+  openImportDialog(currentCsvActionType);
+});
+document.querySelector("#csv-actions-export").addEventListener("click", () => {
+  csvActionsDialog.close();
+  downloadCsvExport(currentCsvActionType);
+});
+document.querySelector("#csv-actions-template").addEventListener("click", () => {
+  csvActionsDialog.close();
+  downloadCsvTemplate(currentCsvActionType);
 });
 
 document.querySelector("#import-csv").addEventListener("input", previewImport);
@@ -757,21 +849,90 @@ document.querySelector("#import-file").addEventListener("change", async (event) 
   }
 });
 
-document.querySelector("#download-csv-template").addEventListener("click", () => {
-  const csv = `\uFEFF${importHeaders.join(",")}\r\n${[selectedBike()?.name || "我的機車", "2026-01-15", "加油", "12500", "5.2", "120", "", "範例紀錄"].map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")}\r\n`;
+function downloadCsvTemplate(type) {
+  const bike = selectedBike();
+  if (!bike) {
+    status.textContent = "請先選擇機車，再下載 CSV 範例。";
+    return;
+  }
+  const example = type === "fuel"
+    ? ["2026-10-15", "12500", "5.2", "120", "範例加油紀錄"]
+    : ["2026-10-15", "12500", "更換機油", "350", "範例保養紀錄"];
+  const csv = `\uFEFF${[
+    escapeCsvCell(bike.name),
+    importHeaders[type].join(","),
+    example.map(escapeCsvCell).join(","),
+  ].join("\r\n")}\r\n`;
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   const link = document.createElement("a");
   link.href = url;
-  link.download = "騎車日記-批次匯入範例.csv";
+  link.download = csvFileName(bike, type);
   link.click();
   URL.revokeObjectURL(url);
-});
+}
+
+function csvFileName(bike, type) {
+  const safeBikeName = bike.name.replace(/[<>:"/\\|?*\u0000-\u001F]/g, "_").trim() || "機車";
+  return `${safeBikeName}_${type === "fuel" ? "加油記錄" : "保養記錄"}.csv`;
+}
+
+function downloadCsvExport(type) {
+  const bike = selectedBike();
+  if (!bike) {
+    status.textContent = "請先選擇機車，再匯出 CSV 紀錄。";
+    return;
+  }
+  const records = bike.records
+    .filter((record) => type === "fuel" ? record.type === "fuel" : record.type !== "fuel")
+    .sort((a, b) => a.date.localeCompare(b.date) || Number(a.odometer) - Number(b.odometer));
+  const rows = [
+    escapeCsvCell(bike.name),
+    importHeaders[type].join(","),
+    ...records.map((record) => {
+      const values = type === "fuel"
+        ? [record.date, record.odometer, record.liters, record.cost, record.note]
+        : [
+          record.date,
+          record.odometer,
+          record.maintenanceContent || record.itemName
+            || bike.maintenanceItems.find((item) => item.id === record.itemId)?.name
+            || typeNames[record.type]
+            || "其他保養",
+          record.cost,
+          record.note,
+        ];
+      return values.map(escapeCsvCell).join(",");
+    }),
+  ];
+  const csv = `\uFEFF${rows.join("\r\n")}\r\n`;
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = csvFileName(bike, type);
+  link.click();
+  URL.revokeObjectURL(url);
+  status.textContent = `已匯出 ${records.length} 筆${type === "fuel" ? "加油" : "保養"}紀錄。`;
+}
 
 importForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (!validImportRows.length) return;
   let added = 0;
   let duplicates = 0;
+  let removed = 0;
+  const affectedBikes = [...new Set(validImportRows.map(({ bike }) => bike))];
+  const previousData = affectedBikes.map((bike) => ({
+    bike,
+    records: bike.records,
+    odometer: bike.odometer,
+  }));
+  for (const bike of affectedBikes) {
+    const previousCount = bike.records.length;
+    bike.records = bike.records.filter((record) => currentImportType === "fuel"
+      ? record.type !== "fuel"
+      : record.type === "fuel");
+    removed += previousCount - bike.records.length;
+  }
   for (const { bike, record } of validImportRows) {
     const duplicate = bike.records.some((entry) =>
       entry.type === record.type
@@ -780,6 +941,7 @@ importForm.addEventListener("submit", (event) => {
       && Number(entry.liters || 0) === record.liters
       && Number(entry.cost || 0) === record.cost
       && (entry.itemId || "") === record.itemId
+      && (entry.maintenanceContent || "") === (record.maintenanceContent || "")
       && (entry.note || "") === record.note);
     if (duplicate) {
       duplicates += 1;
@@ -789,10 +951,17 @@ importForm.addEventListener("submit", (event) => {
     bike.odometer = Math.max(Number(bike.odometer) || 0, Number(record.odometer) || 0);
     added += 1;
   }
-  if (!saveState()) return;
+  if (!saveState()) {
+    for (const { bike, records, odometer } of previousData) {
+      bike.records = records;
+      bike.odometer = odometer;
+    }
+    return;
+  }
   importDialog.close();
   render();
-  status.textContent = `已匯入 ${added} 筆${duplicates ? `，略過 ${duplicates} 筆重複紀錄` : ""}。`;
+  const recordTypeName = currentImportType === "fuel" ? "加油" : "保養";
+  status.textContent = `已匯入 ${added} 筆，取代 ${removed} 筆舊${recordTypeName}紀錄${duplicates ? `，略過 ${duplicates} 筆重複紀錄` : ""}。`;
 });
 
 document.querySelectorAll("[data-close]").forEach((button) => {

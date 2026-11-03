@@ -53,13 +53,8 @@ h2 { margin: 0; font-size: 20px; letter-spacing: .02em; }
 .bike-tab.active { background: white; color: var(--green); box-shadow: 0 1px 5px #263a3510; }
 .bike-page.section-block { margin-top: 22px; }
 .section-actions, .import-actions { display: flex; align-items: center; gap: 14px; }
+.section-actions { flex-wrap: wrap; justify-content: flex-end; }
 .records-heading { align-items: flex-end; }
-.reminder-card { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 18px; }
-.reminder-item { min-height: 104px; padding: 15px 16px; border: 1px solid #e8ece8; border-radius: 16px; background: white; }
-.reminder-item.due { border-color: #efcfaf; background: #fffaf4; }
-.reminder-label { display: block; margin-bottom: 11px; color: var(--muted); font-size: 11px; }
-.reminder-date { display: block; font-size: 15px; font-weight: 700; }
-.reminder-hint { display: block; margin-top: 5px; color: var(--muted); font-size: 10px; }
 .record-filters { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; }
 .filter-chip { flex: 0 0 auto; padding: 8px 14px; border: 1px solid var(--line); border-radius: 20px; background: white; color: var(--muted); font-size: 11px; }
 .filter-chip.active { border-color: var(--green); background: var(--green); color: white; }
@@ -111,9 +106,6 @@ footer p { margin-bottom: 5px; }
 .fuel-bar-track { display: flex; width: 100%; height: 100%; align-items: end; justify-content: center; }
 .fuel-bar { width: min(28px, 70%); min-height: 5px; border-radius: 7px 7px 3px 3px; background: #8ab99f; }
 .fuel-bar-label { padding-top: 7px; white-space: nowrap; }
-.analysis-list { display: grid; gap: 0; }
-.analysis-row { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 11px; }
-.analysis-row:last-child { border-bottom: 0; }
 .oem-notice { margin: 14px 0; padding: 15px; border: 1px solid #dfeae1; border-radius: 15px; background: #edf5ef; }
 .oem-notice strong { display: block; font-size: 14px; }
 .oem-notice p { margin: 7px 0 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
@@ -133,7 +125,6 @@ footer p { margin-bottom: 5px; }
 .oem-link-card small { margin-top: 4px; color: var(--muted); font-size: 10px; }
 .oem-link-arrow { color: var(--green); font-size: 17px; }
 .oem-disclaimer { margin: 12px 2px; color: var(--muted); font-size: 10px; line-height: 1.7; }
-.analysis-row span:last-child { text-align: right; color: var(--muted); }
 .analysis-empty { padding: 18px 4px; color: var(--muted); text-align: center; font-size: 11px; line-height: 1.7; }
 .file-button { display: inline-flex; align-items: center; margin: 0 !important; padding: 8px 11px; border: 1px solid var(--line); border-radius: 10px; background: white; color: var(--green) !important; font-size: 11px !important; cursor: pointer; }
 .file-button input { display: none !important; }
@@ -142,6 +133,8 @@ footer p { margin-bottom: 5px; }
 .import-preview.has-errors { color: #a5533c; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 .modal-actions { justify-content: flex-end; gap: 9px; margin-top: 22px; }
+.csv-action-buttons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.csv-action-buttons #csv-actions-cancel { grid-column: 1 / -1; }
 .button { padding: 11px 17px; border: 0; border-radius: 11px; font-size: 12px; font-weight: 700; }
 .button.secondary { background: var(--cream); color: var(--muted); }
 .button.primary { background: var(--green); color: white; }
